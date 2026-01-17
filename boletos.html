@@ -1,0 +1,18 @@
+const buscar = new URLSearchParams(location.search).get("buscar");
+
+fetch(SCRIPT + "?buscar=" + buscar)
+.then(r => r.json())
+.then(data => {
+  if (data.length === 0) {
+    info.innerHTML = "❌ No se encontraron boletos";
+    return;
+  }
+
+  info.innerHTML = data.map(d => `
+    <hr>
+    <b>Nombre:</b> ${d.nombre}<br>
+    <b>Folio:</b> ${d.folio}<br>
+    <b>Estado:</b> ${d.estado}<br>
+    <b>Boletos:</b><br>${d.boletos}
+  `).join("");
+});
