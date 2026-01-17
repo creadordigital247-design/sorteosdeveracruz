@@ -63,7 +63,7 @@ input,select,button{width:100%;padding:8px;margin-top:6px}
 </div>
 
 <script>
-const SCRIPT = "https://script.google.com/macros/s/AKfycby70z_4Nr-nc4ffaytfO1wkUNQXrceTQ5k80ehh3qEkrJuoOl9gTshStSG-JQAwtt6r/exec";
+const SCRIPT = "https://script.google.com/macros/s/AKfycbwn5pWXmgrtYhtsLUqDQhcuGsThOFIwZqmwAiQ14p9_YOMNBNHt6ABavQLHsVieYVUX/exec";
 
 const grid = document.getElementById("grid");
 const form = document.getElementById("form");
@@ -82,9 +82,7 @@ fetch(SCRIPT)
     d.textContent = n;
     d.className = "num";
 
-    if (ocupados.includes(n)) {
-      d.classList.add("blocked");
-    }
+    if (ocupados.includes(n)) d.classList.add("blocked");
 
     d.onclick = () => {
       if (d.classList.contains("blocked")) return;
@@ -96,11 +94,9 @@ fetch(SCRIPT)
 
       d.classList.toggle("selected");
 
-      if (seleccionados.includes(n)) {
-        seleccionados = seleccionados.filter(x => x !== n);
-      } else {
-        seleccionados.push(n);
-      }
+      seleccionados.includes(n)
+        ? seleccionados = seleccionados.filter(x => x !== n)
+        : seleccionados.push(n);
 
       contador.textContent = "Boletos seleccionados: " + seleccionados.length;
     };
@@ -120,7 +116,7 @@ form.addEventListener("submit", e => {
 
   const tel = celular.value.replace(/\D/g,"");
   if (!/^\d{10}$/.test(tel)) {
-    alert("Celular inválido (10 dígitos)");
+    alert("Celular inválido");
     return;
   }
 
@@ -134,6 +130,9 @@ form.addEventListener("submit", e => {
   data.append("estado", estado.value);
   data.append("celular", tel);
   data.append("boletos", seleccionados.join(","));
+  data.append("fecha", new Date().toISOString());
+  data.append("expira", Date.now() + (24 * 60 * 60 * 1000));
+  data.append("key", "COLOTERO2026");
 
   fetch(SCRIPT, { method:"POST", body:data })
   .then(r => r.json())
@@ -145,16 +144,26 @@ form.addEventListener("submit", e => {
       return;
     }
 
-    const msg = `🎟 BOLETOS APARTADOS – SORTEOS EL COLOTERO
+    const msg = `🎟 *BOLETOS APARTADOS*
+*SORTEOS EL COLOTERO*
 
-FOLIO: ${res.folio}
-Nombre: ${nombre.value} ${apellido.value}
-Boletos: ${seleccionados.join(", ")}
+📌 *FOLIO:* ${res.folio}
+👤 *Nombre:* ${nombre.value} ${apellido.value}
+📍 *Estado:* ${estado.value}
+📱 *Celular:* ${celular.value}
 
-💰 PREMIO: $1,500.00 MXN
+🎫 *Boletos apartados:*
+${seleccionados.join(", ")}
 
-Enviar comprobante de pago por este WhatsApp.
-🍀 MUCHA SUERTE 🍀`;
+💰 *PREMIO:* $1,500.00 MXN
+
+⏳ *IMPORTANTE*
+Tienes *24 horas* para realizar tu pago y conservar tus boletos.
+
+📲 Envía tu comprobante de pago respondiendo a este WhatsApp.
+
+🍀 ¡MUCHA SUERTE! 🍀
+Sorteos El Colotero`;
 
     window.open(
       "https://wa.me/52" + tel + "?text=" + encodeURIComponent(msg),
