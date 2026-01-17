@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Sorteos El Colotero</title>
+
+<style>
+body{font-family:Arial;background:#f4f4f4;padding:20px}
+.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+.num{padding:8px;border:1px solid #ccc;text-align:center;cursor:pointer}
+.num.selected{background:#4caf50;color:#fff}
+.num.blocked{background:#999;color:#fff;cursor:not-allowed}
+form,.extra{background:#fff;padding:15px;margin-top:15px}
+input,select,button{width:100%;padding:8px;margin-top:6px}
+</style>
+</head>
+
+<body>
+
+<h2>Sorteos El Colotero</h2>
+
+<div class="grid" id="grid"></div>
+
+<form id="form">
+<input id="nombre" placeholder="Nombre" required>
+<input id="apellido" placeholder="Apellido" required>
+
+<select id="estado" required>
+<option value="">Selecciona tu estado</option>
+<option>Aguascalientes</option><option>Baja California</option>
+<option>Baja California Sur</option><option>Campeche</option>
+<option>Chiapas</option><option>Chihuahua</option>
+<option>Coahuila</option><option>Colima</option>
+<option>CDMX</option><option>Durango</option>
+<option>Estado de México</option><option>Guanajuato</option>
+<option>Guerrero</option><option>Hidalgo</option>
+<option>Jalisco</option><option>Michoacán</option>
+<option>Morelos</option><option>Nayarit</option>
+<option>Nuevo León</option><option>Oaxaca</option>
+<option>Puebla</option><option>Querétaro</option>
+<option>Quintana Roo</option><option>San Luis Potosí</option>
+<option>Sinaloa</option><option>Sonora</option>
+<option>Tabasco</option><option>Tamaulipas</option>
+<option>Tlaxcala</option><option>Veracruz</option>
+<option>Yucatán</option><option>Zacatecas</option>
+</select>
+
+<input id="celular" placeholder="Celular 10 dígitos" required>
+<button>PARTICIPAR</button>
+</form>
+
+<div class="extra">
+<h4>Consultar boletos</h4>
+<input id="buscar" placeholder="Folio o celular">
+<button onclick="consultar()">CONSULTAR</button>
+</div>
+
+<script>
+/* URL REAL DEL APPS SCRIPT (ÚNICO CAMBIO) */
+const SCRIPT = "https://script.google.com/macros/s/AKfycbxqlzYX2ZGtEB_JFaaK2xoUcPsP8MpEanSK80XRUPInI5X3UbvY5Dj3UX8jSZgMwEHq/exec";
+
+let seleccionados = [];
+const grid = document.getElementById("grid");
+
+/* CARGA BOLETOS */
+fetch(SCRIPT)
+.then(r => r.json())
+.then(ocupados => {
+  for (let i = 1; i <= 200; i++) {
+    const n = String(i).padStart(4, "0");
+    const d = document.createElement("div");
+    d.textContent = n;
+    d.className = "num";
+    if (ocupados.includes(n)) d.classList.add("blocked");
+
+    d.onclick = () => {
+      if (d.classList.contains("blocked")) return;
+      d.classList.toggle("selected");
+      seleccionados.includes(n)
+        ? seleccionados = seleccionados.filter(x => x !== n)
+        : seleccionados.push(n);
+    };
+    grid.appendChild(d);
+  }
+});
+
+/* PARTICIPAR */
+form.onsubmit = e => {
+  e.preventDefault();
+
+  if (seleccionados.length === 0) {
+    alert("Selecciona al menos un boleto");
+    return;
+  }
+
+  const data = new FormData();
+  data.append("nombre", nombre.value);
+  data.append("apellido", apellido.value);
+  data.append("estado", estado.value);
+  data.append("celular", celular.value);
+  data.append("boletos", seleccionados.join(", "));
+
+  fetch(SCRIPT, { method: "POST", body: data })
+  .then(r => r.json())
+  .then(res => {
+
+    if (!res.folio) {
+      alert("Error al registrar boletos");
+      return;
+    }
+
+    const msg = `🎟 BOLETOS APARTADOS – SORTEOS EL COLOTERO
+
+FOLIO: ${res.folio}
+
+Nombre: ${nombre.value} ${apellido.value}
+Boletos: ${seleccionados.join(", ")}
+
+💳 SIGUIENTE PASO:
+Mandar comprobante de pago por este WhatsApp.
+
+💰 CUENTAS:
+OXXO: 72 8969000045848637
+Mercado Pago: 5428 7801 5358 9361
+
+⏳ Ahora solo toca esperar la confirmación de tu pago.
+🍀 MUCHA SUERTE 🍀`;
+
+    window.open(
+      "https://wa.me/52" + celular.value + "?text=" + encodeURIComponent(msg),
+      "_blank"
+    );
+
+    location.reload();
+  });
+};
+
+function consultar(){
+  if (!buscar.value) return;
+  location.href = "boletos.html?buscar=" + buscar.value;
+}
+</script>
+
+</body>
+</html>
