@@ -7,7 +7,8 @@
 <style>
 body{font-family:Arial;background:#f4f4f4;padding:20px}
 .grid{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
-.num{padding:8px;border:1px solid #ccc;text-align:center;cursor:pointer}
+.num{padding:8px;border:1px solid #ccc;text-align:center;cursor:pointer;transition:.2s}
+.num:hover{transform:scale(1.05)}
 .num.selected{background:#4caf50;color:#fff}
 .num.blocked{background:#999;color:#fff;cursor:not-allowed}
 form,.extra{background:#fff;padding:15px;margin-top:15px}
@@ -18,6 +19,12 @@ input,select,button{width:100%;padding:8px;margin-top:6px}
 <body>
 
 <h2>Sorteos El Colotero</h2>
+
+<h3 style="color:#d32f2f">
+🎉 GRAN PREMIO: $1,500.00 MXN 🎉
+</h3>
+
+<p id="contador">Boletos seleccionados: 0</p>
 
 <div class="grid" id="grid"></div>
 
@@ -46,7 +53,7 @@ input,select,button{width:100%;padding:8px;margin-top:6px}
 </select>
 
 <input id="celular" placeholder="Celular 10 dígitos" required>
-<button>PARTICIPAR</button>
+<button type="submit">PARTICIPAR</button>
 </form>
 
 <div class="extra">
@@ -56,36 +63,54 @@ input,select,button{width:100%;padding:8px;margin-top:6px}
 </div>
 
 <script>
-/* URL REAL DEL APPS SCRIPT (ÚNICO CAMBIO) */
-const SCRIPT = "https://script.google.com/macros/s/AKfycbw-Mb046QdMn8W_jg2ZJXZWf1wuZDcnhz6CPQPZ8BZscrhxCVKw-_ObHoy4nGz2GPkT/exec";
+const SCRIPT = "https://script.google.com/macros/s/AKfycbwn5pWXmgrtYhtsLUqDQhcuGsThOFIwZqmwAiQ14p9_YOMNBNHt6ABavQLHsVieYVUX/exec";
+
+const grid = document.getElementById("grid");
+const form = document.getElementById("form");
+const contador = document.getElementById("contador");
 
 let seleccionados = [];
-const grid = document.getElementById("grid");
+const MAX_BOLETOS = 5;
 
-/* CARGA BOLETOS */
+/* CARGAR BOLETOS */
 fetch(SCRIPT)
 .then(r => r.json())
 .then(ocupados => {
   for (let i = 1; i <= 200; i++) {
-    const n = String(i).padStart(4, "0");
+    const n = String(i).padStart(4,"0");
     const d = document.createElement("div");
     d.textContent = n;
     d.className = "num";
-    if (ocupados.includes(n)) d.classList.add("blocked");
+
+    if (ocupados.includes(n)) {
+      d.classList.add("blocked");
+    }
 
     d.onclick = () => {
       if (d.classList.contains("blocked")) return;
+
+      if (!seleccionados.includes(n) && seleccionados.length >= MAX_BOLETOS) {
+        alert("Máximo " + MAX_BOLETOS + " boletos");
+        return;
+      }
+
       d.classList.toggle("selected");
-      seleccionados.includes(n)
-        ? seleccionados = seleccionados.filter(x => x !== n)
-        : seleccionados.push(n);
+
+      if (seleccionados.includes(n)) {
+        seleccionados = seleccionados.filter(x => x !== n);
+      } else {
+        seleccionados.push(n);
+      }
+
+      contador.textContent = "Boletos seleccionados: " + seleccionados.length;
     };
+
     grid.appendChild(d);
   }
 });
 
 /* PARTICIPAR */
-form.onsubmit = e => {
+form.addEventListener("submit", e => {
   e.preventDefault();
 
   if (seleccionados.length === 0) {
@@ -93,47 +118,52 @@ form.onsubmit = e => {
     return;
   }
 
+  const tel = celular.value.replace(/\D/g,"");
+  if (!/^\d{10}$/.test(tel)) {
+    alert("Celular inválido (10 dígitos)");
+    return;
+  }
+
+  const btn = form.querySelector("button");
+  btn.disabled = true;
+  btn.textContent = "Procesando...";
+
   const data = new FormData();
   data.append("nombre", nombre.value);
   data.append("apellido", apellido.value);
   data.append("estado", estado.value);
-  data.append("celular", celular.value);
-  data.append("boletos", seleccionados.join(", "));
+  data.append("celular", tel);
+  data.append("boletos", seleccionados.join(","));
 
-  fetch(SCRIPT, { method: "POST", body: data })
+  fetch(SCRIPT, { method:"POST", body:data })
   .then(r => r.json())
   .then(res => {
-
     if (!res.folio) {
-      alert("Error al registrar boletos");
+      alert("Error al registrar");
+      btn.disabled = false;
+      btn.textContent = "PARTICIPAR";
       return;
     }
 
     const msg = `🎟 BOLETOS APARTADOS – SORTEOS EL COLOTERO
 
 FOLIO: ${res.folio}
-
 Nombre: ${nombre.value} ${apellido.value}
 Boletos: ${seleccionados.join(", ")}
 
-💳 SIGUIENTE PASO:
-Mandar comprobante de pago por este WhatsApp.
+💰 PREMIO: $1,500.00 MXN
 
-💰 CUENTAS:
-OXXO: 72 8969000045848637
-Mercado Pago: 5428 7801 5358 9361
-
-⏳ Ahora solo toca esperar la confirmación de tu pago.
+Enviar comprobante de pago por este WhatsApp.
 🍀 MUCHA SUERTE 🍀`;
 
     window.open(
-      "https://wa.me/52" + celular.value + "?text=" + encodeURIComponent(msg),
+      "https://wa.me/52" + tel + "?text=" + encodeURIComponent(msg),
       "_blank"
     );
 
     location.reload();
   });
-};
+});
 
 function consultar(){
   if (!buscar.value) return;
