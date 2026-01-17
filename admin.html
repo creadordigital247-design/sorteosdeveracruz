@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Admin - Sorteos El Colotero</title>
+<style>
+body{font-family:Arial;background:#f4f4f4;padding:20px}
+table{width:100%;border-collapse:collapse;background:#fff}
+th,td{border:1px solid #ccc;padding:8px;text-align:center}
+th{background:#333;color:#fff}
+button{padding:6px}
+</style>
+</head>
+<body>
+
+<h2>Panel Administrador</h2>
+
+<table id="tabla">
+<tr>
+<th>Folio</th>
+<th>Nombre</th>
+<th>Celular</th>
+<th>Boletos</th>
+<th>Estado</th>
+<th>Fecha</th>
+<th>Pago</th>
+</tr>
+</table>
+
+<script>
+const SCRIPT = "TU_MISMO_SCRIPT_AQUI";
+
+fetch(SCRIPT + "?admin=1")
+.then(r => r.json())
+.then(data => {
+  const tabla = document.getElementById("tabla");
+  data.forEach(r => {
+    tabla.innerHTML += `
+    <tr>
+      <td>${r.folio}</td>
+      <td>${r.nombre}</td>
+      <td>${r.celular}</td>
+      <td>${r.boletos}</td>
+      <td>${r.estado}</td>
+      <td>${r.fecha}</td>
+      <td>${r.pagado || "PENDIENTE"}</td>
+    </tr>`;
+  });
+});
+</script>
+
+</body>
+</html>
